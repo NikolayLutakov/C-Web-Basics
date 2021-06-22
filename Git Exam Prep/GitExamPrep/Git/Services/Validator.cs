@@ -2,6 +2,9 @@
 using GitData;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
+
+using static GitData.Common.DataConstants;
 
 namespace Git.Services
 {
@@ -52,37 +55,45 @@ namespace Git.Services
         {
             var validationErrors = new List<string>();
 
+            // Validate Username is unique.
             if (this.dbContext.Users.Any(u => u.Username == model.Username))
             {
-                validationErrors.Add($"Username '{model.Username}' is already taken.");
+                validationErrors.Add($"User with username '{model.Username}' already exists.");
             }
 
+            // Validate Email is unique.
             if (this.dbContext.Users.Any(u => u.Email == model.Email))
             {
-                validationErrors.Add($"Email '{model.Username}' is already taken.");
+                validationErrors.Add($"User with email '{model.Email}' already exists.");
             }
 
-            if (model.Username.Length < 5 || model.Username.Length > 20)
+            // Validate Username with regex "^[\\w-_]{{{UserMinUsernameLength},{UserMaxUsernameLength}}}$".
+            if (!Regex.IsMatch(model.Username, UserUsernamePattern))
             {
-                validationErrors.Add($"Username '{model.Username}' is not valid. It must be between 5 and 20 characters long.");
-            }
-            
-            if (string.IsNullOrWhiteSpace(model.Email))
-            {
-                validationErrors.Add($"Email can not be empty!");
+                validationErrors.Add($"Invalid username. It must be between {UserMinUsernameLength} and {UserMaxUsernameLength} characters long, and may contains only leters, numbers, underscores and dashes.");
             }
 
-            if (model.Password.Length < 6 || model.Password.Length > 20)
+            // Validate Email with regex "^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$".
+            if (!Regex.IsMatch(model.Email, UserEmailPattern))
             {
-                validationErrors.Add($"Invalid password. It must be between 6 and 20 characters long.");
+                validationErrors.Add($"Invalid email. It must be like 'something@something.something'.");
             }
 
+            // Validate Password with regex "^[\\w-_]{{{UserMinPasswordLength},{UserMaxPasswordLength}}}$".
+            if (!Regex.IsMatch(model.Password, UserPasswordPattern))
+            {
+                validationErrors.Add($"Invalid password. It must be between {UserMinPasswordLength} and {UserMaxPasswordLength} characters long, and may contains only leters, numbers, underscores and dashes.");
+            }
+
+            // Validate Confirm Password.
             if (model.Password != model.ConfirmPassword)
             {
-                validationErrors.Add($"Password and its confirmation are different.");
+                validationErrors.Add($"Inserted 'Password' and 'Confirm Password' did not match.");
             }
 
             return validationErrors;
         }
+
+        
     }
 }
